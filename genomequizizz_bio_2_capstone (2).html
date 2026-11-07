@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GenomeQuizizz BIO 2 Capstone - DNA & Genome Packaging</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            bio: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              400: '#2dd4bf',
+              500: '#14b8a6',
+              600: '#0d9488',
+              900: '#134e4a',
+              glow: '#00f2fe'
+            },
+            dna: {
+              adenine: '#ef4444',
+              thymine: '#3b82f6',
+              cytosine: '#eab308',
+              guanine: '#10b981',
+              backbone: '#a855f7',
+              histone: '#f97316'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Three.js & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- Canvas Confetti for Quiz Celebrations -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+    ::-webkit-scrollbar-thumb { background: rgba(45, 212, 191, 0.3); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(45, 212, 191, 0.6); }
+
+    /* Glassmorphism Styles */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .glass-card {
+      background: rgba(30, 41, 59, 0.6);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glow-effect {
+      box-shadow: 0 0 20px rgba(45, 212, 191, 0.25);
+    }
+    
+    .glow-text {
+      text-shadow: 0 0 10px rgba(45, 212, 191, 0.5);
+    }
+
+    /* Pulse animation for active node */
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .pulse-node { animation: pulse-ring 3s infinite ease-in-out; }
+  </style>
+</head>
+
+<body class="h-full flex flex-col overflow-hidden font-sans select-none antialiased">
+
+  <!-- Top Header Navigation -->
+  <header class="h-16 glass-panel z-30 flex items-center justify-between px-4 md:px-6 border-b border-slate-800 shrink-0">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-bio-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-bio-500/30">
+        <i class="fa-solid font-bold text-slate-950 text-xl fa-dna"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-lg leading-tight bg-gradient-to-r from-teal-200 via-cyan-100 to-indigo-200 bg-clip-text text-transparent">
+          GenomeQuizizz <span class="text-xs px-2 py-0.5 rounded bg-bio-500/20 text-bio-400 border border-bio-500/30 font-mono">BIO 2 CAPSTONE</span>
+        </h1>
+        <p class="text-xs text-slate-400 hidden sm:block">DNA Architecture & Higher-Order Chromatin Packaging</p>
+      </div>
+    </div>
+
+    <!-- Mode Switcher Tabs -->
+    <div class="flex items-center space-x-1 sm:space-x-2 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+      <button id="nav-explorer" onclick="switchTab('explorer')" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 transition-all bg-bio-500 text-slate-950 shadow-md">
+        <i class="fa-solid fa-cube"></i>
+        <span class="hidden md:inline">3D Explorer</span>
+      </button>
+      <button id="nav-quiz" onclick="switchTab('quiz')" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 transition-all text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-gamepad"></i>
+        <span>Quiz Module</span>
+        <span id="quiz-badge" class="px-1.5 py-0.5 text-[10px] bg-indigo-500/30 text-indigo-300 rounded-full border border-indigo-500/40 font-mono">10 Qs</span>
+      </button>
+      <button id="nav-guide" onclick="switchTab('guide')" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 transition-all text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-book-open"></i>
+        <span class="hidden md:inline">Guide & Presentation</span>
+      </button>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="flex items-center space-x-4 font-mono text-xs">
+      <div class="hidden lg:flex items-center space-x-2 bg-slate-900/60 px-3 py-1.5 rounded-lg border border-slate-800">
+        <i class="fa-solid fa-fire text-amber-500 animate-pulse"></i>
+        <span class="text-slate-400">Streak:</span>
+        <span id="streak-counter" class="text-amber-400 font-bold">0x</span>
+      </div>
+      <div class="flex items-center space-x-2 bg-slate-900/60 px-3 py-1.5 rounded-lg border border-slate-800">
+        <i class="fa-solid fa-trophy text-yellow-400"></i>
+        <span class="text-slate-400 hidden sm:inline">Score:</span>
+        <span id="score-display" class="text-emerald-400 font-bold">0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <div class="relative flex-1 flex overflow-hidden">
+    
+    <!-- 3D Viewport Container (Background & Active Scene) -->
+    <div id="canvas-container" class="absolute inset-0 z-0 bg-slate-950">
+      <!-- Three.js Canvas standard injected by JS -->
+      
+      <!-- Interactive Level Selector Overlay (Floating Controls) -->
+      <div class="absolute top-4 left-4 z-10 flex flex-col space-y-2 max-w-[260px]">
+        <div class="glass-panel p-2 rounded-xl text-xs">
+          <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-2 px-1 flex justify-between items-center">
+            <span>Packaging Hierarchy</span>
+            <span class="text-bio-400">Scale</span>
+          </div>
+          <div class="space-y-1">
+            <button onclick="setLevel(1)" id="lvl-btn-1" class="level-btn w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between transition-all bg-bio-500/20 text-bio-300 border border-bio-500/40">
+              <span class="flex items-center space-x-2 font-medium">
+                <i class="fa-solid fa-dna text-dna-backbone"></i>
+                <span>1. Double Helix</span>
+              </span>
+              <span class="font-mono text-[10px] opacity-75">2 nm</span>
+            </button>
+            <button onclick="setLevel(2)" id="lvl-btn-2" class="level-btn w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between transition-all text-slate-300 hover:bg-slate-800/60 border border-transparent">
+              <span class="flex items-center space-x-2 font-medium">
+                <i class="fa-solid fa-circle-dot text-dna-histone"></i>
+                <span>2. Nucleosomes</span>
+              </span>
+              <span class="font-mono text-[10px] opacity-75">11 nm</span>
+            </button>
+            <button onclick="setLevel(3)" id="lvl-btn-3" class="level-btn w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between transition-all text-slate-300 hover:bg-slate-800/60 border border-transparent">
+              <span class="flex items-center space-x-2 font-medium">
+                <i class="fa-solid fa-scroll text-cyan-400"></i>
+                <span>3. Solenoid Fiber</span>
+              </span>
+              <span class="font-mono text-[10px] opacity-75">30 nm</span>
+            </button>
+            <button onclick="setLevel(4)" id="lvl-btn-4" class="level-btn w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between transition-all text-slate-300 hover:bg-slate-800/60 border border-transparent">
+              <span class="flex items-center space-x-2 font-medium">
+                <i class="fa-solid fa-dharmachakra text-indigo-400"></i>
+                <span>4. Chromosome</span>
+              </span>
+              <span class="font-mono text-[10px] opacity-75">1400 nm</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Visual Settings Quick Toggles -->
+        <div class="glass-panel p-2 rounded-xl text-xs flex items-center justify-between">
+          <button id="toggle-rotate" onclick="toggleAutoRotate()" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center space-x-1 text-[11px]">
+            <i class="fa-solid fa-rotate text-bio-400"></i>
+            <span id="rotate-text">Pause Spin</span>
+          </button>
+          <button id="reset-cam" onclick="resetCamera()" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center space-x-1 text-[11px]">
+            <i class="fa-solid fa-crosshairs text-indigo-400"></i>
+            <span>Reset Cam</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Selected Element Inspector Card (Bottom Right 3D Tooltip) -->
+      <div id="inspector-card" class="hidden absolute bottom-6 right-6 z-10 glass-panel p-4 rounded-2xl max-w-sm w-full border border-bio-500/30 shadow-2xl transition-all">
+        <div class="flex items-start justify-between border-b border-slate-700/60 pb-2 mb-2">
+          <div>
+            <span id="inspect-badge" class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-bio-500/20 text-bio-300 border border-bio-500/30 uppercase">Structure</span>
+            <h3 id="inspect-title" class="font-bold text-base text-slate-100 mt-1">Nucleosome Bead</h3>
+          </div>
+          <button onclick="closeInspector()" class="text-slate-400 hover:text-slate-200 text-sm p-1">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <p id="inspect-desc" class="text-xs text-slate-300 leading-relaxed mb-3">
+          Histone octamer consisting of two copies each of H2A, H2B, H3, and H4 around which ~147 base pairs of DNA are wrapped.
+        </p>
+        <div class="grid grid-cols-2 gap-2 text-[11px] font-mono bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+          <div>
+            <span class="text-slate-500 block">Diameter:</span>
+            <span id="inspect-metric1" class="text-teal-300 font-semibold">11 nm</span>
+          </div>
+          <div>
+            <span class="text-slate-500 block">Packing Ratio:</span>
+            <span id="inspect-metric2" class="text-indigo-300 font-semibold">6-fold</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Helper Click Hint -->
+      <div class="absolute bottom-6 left-6 z-10 pointer-events-none hidden sm:flex items-center space-x-2 text-xs text-slate-400 glass-panel px-3 py-1.5 rounded-full">
+        <i class="fa-solid fa-hand-pointer text-bio-400 animate-bounce"></i>
+        <span>Click on 3D structures or helices to inspect details</span>
+      </div>
+    </div>
+
+    <!-- EXPLORER OVERLAY PANEL (Toggled via Tabs) -->
+    <div id="panel-explorer" class="active-tab-panel relative z-10 pointer-events-none w-full h-full flex justify-end p-4 md:p-6">
+      <!-- Right Side Info Drawer -->
+      <div class="pointer-events-auto w-full max-w-sm h-full flex flex-col space-y-4 overflow-y-auto pr-1">
+        
+        <!-- Structural Overview Card -->
+        <div class="glass-panel p-4 rounded-2xl border border-slate-700/80 shadow-xl">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-bold text-sm uppercase tracking-wider text-bio-400 flex items-center space-x-2">
+              <i class="fa-solid fa-microscope"></i>
+              <span>Current Level Info</span>
+            </h2>
+            <span id="explorer-scale-badge" class="font-mono text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">2 nm</span>
+          </div>
+          <h3 id="explorer-title" class="text-lg font-bold text-slate-100 mb-1">Double Helix DNA</h3>
+          <p id="explorer-desc" class="text-xs text-slate-300 leading-relaxed mb-4">
+            The foundational level of genetic storage. Two complementary antiparallel polynucleotide strands held together by hydrogen bonds between purines and pyrimidines.
+          </p>
+
+          <div class="space-y-2">
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Key Biochemical Features</div>
+            <div id="explorer-features" class="space-y-1.5 text-xs">
+              <!-- Dynamic features inserted by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Legend Card -->
+        <div class="glass-panel p-4 rounded-2xl border border-slate-700/80 shadow-xl">
+          <h3 class="font-bold text-xs uppercase tracking-wider text-slate-300 mb-3 flex items-center space-x-2">
+            <i class="fa-solid fa-palette text-bio-400"></i>
+            <span>Color Key & Components</span>
+          </h3>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="flex items-center space-x-2 bg-slate-900/50 p-1.5 rounded border border-slate-800">
+              <span class="w-3 h-3 rounded-full bg-dna-adenine inline-block"></span>
+              <span class="text-slate-300 font-mono text-[11px]">Adenine (A)</span>
+            </div>
+            <div class="flex items-center space-x-2 bg-slate-900/50 p-1.5 rounded border border-slate-800">
+              <span class="w-3 h-3 rounded-full bg-dna-thymine inline-block"></span>
+              <span class="text-slate-300 font-mono text-[11px]">Thymine (T)</span>
+            </div>
+            <div class="flex items-center space-x-2 bg-slate-900/50 p-1.5 rounded border border-slate-800">
+              <span class="w-3 h-3 rounded-full bg-dna-cytosine inline-block"></span>
+              <span class="text-slate-300 font-mono text-[11px]">Cytosine (C)</span>
+            </div>
+            <div class="flex items-center space-x-2 bg-slate-900/50 p-1.5 rounded border border-slate-800">
+              <span class="w-3 h-3 rounded-full bg-dna-guanine inline-block"></span>
+              <span class="text-slate-300 font-mono text-[11px]">Guanine (G)</span>
+            </div>
+            <div class="flex items-center space-x-2 bg-slate-900/50 p-1.5 rounded border border-slate-800">
+              <span class="w-3 h-3 rounded-full bg-dna-backbone inline-block"></span>
+              <span class="text-slate-300 font-mono text-[11px]">Sugar-Phosphate</span>
+            </div>
+            <div class="flex items-center space-x-2 bg-slate-900/50 p-1.5 rounded border border-slate-800">
+              <span class="w-3 h-3 rounded-full bg-dna-histone inline-block"></span>
+              <span class="text-slate-300 font-mono text-[11px]">Histone Octamer</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- QUIZ ENGINE PANEL (Toggled via Tabs) -->
+    <div id="panel-quiz" class="hidden relative z-10 w-full h-full flex items-center justify-center p-4 md:p-6 overflow-y-auto">
+      <div class="w-full max-w-2xl glass-panel p-6 rounded-3xl border border-bio-500/40 shadow-2xl relative">
+        
+        <!-- Quiz Progress Bar Header -->
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-2">
+            <span class="text-xs font-mono text-bio-400 font-semibold">QUESTION <span id="quiz-current-num">1</span> OF <span id="quiz-total-num">10</span></span>
+            <span id="quiz-topic-tag" class="px-2 py-0.5 rounded text-[10px] font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">DNA Structure</span>
+          </div>
+          <div class="flex items-center space-x-3 text-xs font-mono">
+            <span class="text-amber-400 flex items-center space-x-1">
+              <i class="fa-solid fa-bolt"></i>
+              <span id="quiz-streak">0x</span>
+            </span>
+            <span class="text-emerald-400 flex items-center space-x-1">
+              <i class="fa-solid fa-coins"></i>
+              <span id="quiz-score">0 pts</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Visual Progress Bar -->
+        <div class="w-full bg-slate-800 rounded-full h-2 mb-6 overflow-hidden">
+          <div id="quiz-progress-bar" class="bg-gradient-to-r from-bio-500 to-indigo-500 h-full w-0 transition-all duration-500"></div>
+        </div>
+
+        <!-- Question Box -->
+        <div class="mb-6">
+          <h2 id="quiz-question-text" class="text-lg md:text-xl font-bold text-slate-100 leading-snug">
+            Loading Bio 2 Capstone question...
+          </h2>
+        </div>
+
+        <!-- Answer Options Grid -->
+        <div id="quiz-options-container" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <!-- Explanation Drawer (Revealed after selection) -->
+        <div id="quiz-explanation-box" class="hidden p-4 rounded-xl bg-slate-900/90 border border-slate-700 text-xs mb-4">
+          <div class="flex items-center space-x-2 font-bold mb-1" id="quiz-result-header">
+            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+            <span>Correct Answer!</span>
+          </div>
+          <p id="quiz-explanation-text" class="text-slate-300 leading-relaxed">
+            Explanation text goes here...
+          </p>
+        </div>
+
+        <!-- Footer Action Button -->
+        <div class="flex justify-end">
+          <button id="quiz-next-btn" onclick="nextQuestion()" class="hidden px-6 py-2.5 rounded-xl bg-gradient-to-r from-bio-500 to-cyan-500 hover:from-bio-400 hover:to-cyan-400 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center space-x-2 shadow-lg shadow-bio-500/20 transition-all">
+            <span>Next Question</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+
+        <!-- Quiz Completion Screen (Overlay inside card) -->
+        <div id="quiz-complete-screen" class="hidden text-center py-8 space-y-4">
+          <div class="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-yellow-400 to-amber-600 flex items-center justify-center text-slate-950 text-3xl shadow-xl shadow-amber-500/30">
+            <i class="fa-solid fa-award"></i>
+          </div>
+          <h2 class="text-2xl font-extrabold text-slate-100">Capstone Quiz Complete!</h2>
+          <p class="text-xs text-slate-300 max-w-md mx-auto">
+            You've demonstrated key mastery of DNA Double Helix directionality, Purine/Pyrimidine bonding, Histone Octamer organization, and Chromatin compaction!
+          </p>
+
+          <div class="grid grid-cols-3 gap-3 max-w-md mx-auto py-4 font-mono text-xs">
+            <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+              <span class="text-slate-500 block text-[10px]">FINAL SCORE</span>
+              <span id="final-score" class="text-lg font-bold text-emerald-400">0</span>
+            </div>
+            <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+              <span class="text-slate-500 block text-[10px]">ACCURACY</span>
+              <span id="final-accuracy" class="text-lg font-bold text-cyan-400">0%</span>
+            </div>
+            <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+              <span class="text-slate-500 block text-[10px]">MAX STREAK</span>
+              <span id="final-streak" class="text-lg font-bold text-amber-400">0x</span>
+            </div>
+          </div>
+
+          <button onclick="restartQuiz()" class="px-6 py-3 rounded-xl bg-bio-500 hover:bg-bio-400 text-slate-950 font-bold text-xs uppercase tracking-wider space-x-2 inline-flex items-center shadow-lg shadow-bio-500/20">
+            <i class="fa-solid fa-rotate-right"></i>
+            <span>Retake Assessment</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- GUIDE & PRESENTATION PANEL (Toggled via Tabs) -->
+    <div id="panel-guide" class="hidden relative z-10 w-full h-full flex items-center justify-center p-4 md:p-6 overflow-y-auto">
+      <div class="w-full max-w-4xl glass-panel p-6 md:p-8 rounded-3xl border border-slate-700/80 shadow-2xl space-y-6">
+        
+        <!-- Presentation Slide Navigation Header -->
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div class="flex items-center space-x-3">
+            <div class="p-2 rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+              <i class="fa-solid fa-chalkboard-user text-xl"></i>
+            </div>
+            <div>
+              <h2 class="font-bold text-base text-slate-100">BIO 2 Capstone Technical Presentation</h2>
+              <p class="text-xs text-slate-400">Genome Packaging & DNA Molecular Biology</p>
+            </div>
+          </div>
+
+          <!-- Slide Controls -->
+          <div class="flex items-center space-x-2">
+            <button onclick="prevSlide()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <span id="slide-indicator" class="text-xs font-mono px-3 py-1 bg-slate-900 rounded border border-slate-800 text-slate-300">Slide 1 / 4</span>
+            <button onclick="nextSlide()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Slide Containers -->
+        <div id="slide-content-container" class="min-h-[320px] text-xs leading-relaxed text-slate-300">
+          
+          <!-- Slide 1 -->
+          <div id="slide-1" class="slide-page space-y-4">
+            <h3 class="text-lg font-bold text-teal-300 flex items-center space-x-2">
+              <i class="fa-solid fa-dna"></i>
+              <span>1. Molecular Architecture of the DNA Double Helix</span>
+            </h3>
+            <p>
+              Deoxyribonucleic Acid (DNA) is a double-stranded helix with an antiparallel orientation. One strand runs 5′ to 3′ while the complementary strand runs 3′ to 5′.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-2">
+              <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                <h4 class="font-bold text-slate-200 mb-1 text-xs">Purines vs. Pyrimidines</h4>
+                <ul class="list-disc list-inside space-y-1 text-[11px] text-slate-400">
+                  <li><strong class="text-emerald-400">Purines (Double Ring):</strong> Adenine (A), Guanine (G).</li>
+                  <li><strong class="text-sky-400">Pyrimidines (Single Ring):</strong> Thymine (T), Cytosine (C).</li>
+                  <li>Base pairing: A=T (2 H-bonds), G≡C (3 H-bonds).</li>
+                </ul>
+              </div>
+              <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                <h4 class="font-bold text-slate-200 mb-1 text-xs">Structural Metrics</h4>
+                <ul class="list-disc list-inside space-y-1 text-[11px] text-slate-400">
+                  <li><strong>Diameter:</strong> 2.0 nanometers (nm).</li>
+                  <li><strong>Helical Turn:</strong> 3.4 nm (~10.5 base pairs per turn).</li>
+                  <li><strong>Major & Minor Grooves:</strong> Critical for protein binding (e.g., transcription factors).</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 2 -->
+          <div id="slide-2" class="slide-page hidden space-y-4">
+            <h3 class="text-lg font-bold text-amber-400 flex items-center space-x-2">
+              <i class="fa-solid fa-circle-dot"></i>
+              <span>2. The Nucleosome: First Level of Packaging</span>
+            </h3>
+            <p>
+              Human cells contain ~2 meters of DNA per nucleus. To fit within a ~6 µm nucleus, DNA wraps around basic proteins called **histones**.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-2">
+              <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                <h4 class="font-bold text-slate-200 mb-1 text-xs">The Histone Octamer</h4>
+                <p class="text-[11px] text-slate-400">
+                  Composed of two copies each of core histones: <strong>H2A, H2B, H3, and H4</strong>. Rich in positively charged basic amino acids (Lysine & Arginine) that bind tightly to the negatively charged phosphate backbone of DNA.
+                </p>
+              </div>
+              <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                <h4 class="font-bold text-slate-200 mb-1 text-xs">Beads-on-a-String (11 nm)</h4>
+                <p class="text-[11px] text-slate-400">
+                  ~147 base pairs of DNA wrap 1.65 left-handed superhelical turns around each octamer. Linker DNA connects adjacent beads, stabilized by linker histone <strong>H1</strong>.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 3 -->
+          <div id="slide-3" class="slide-page hidden space-y-4">
+            <h3 class="text-lg font-bold text-cyan-400 flex items-center space-x-2">
+              <i class="fa-solid fa-scroll"></i>
+              <span>3. 30 nm Chromatin Fiber & Higher Order Loops</span>
+            </h3>
+            <p>
+              Nucleosomes fold into a 30-nm diameter fiber through interactions between histone tails and linker histone H1.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-2">
+              <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                <h4 class="font-bold text-slate-200 mb-1 text-xs">Solenoid & Zigzag Models</h4>
+                <p class="text-[11px] text-slate-400">
+                  The 11 nm nucleosome chain coils into a helical solenoid structure with 6 nucleosomes per turn, compressing DNA ~40-fold total.
+                </p>
+              </div>
+              <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                <h4 class="font-bold text-slate-200 mb-1 text-xs">Scaffold Looping</h4>
+                <p class="text-[11px] text-slate-400">
+                  The 30 nm fiber forms loops (30–100 kb) anchored to a non-histone protein nuclear scaffold (MARs/SARs via Condensin & Cohesin).
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 4 -->
+          <div id="slide-4" class="slide-page hidden space-y-4">
+            <h3 class="text-lg font-bold text-indigo-400 flex items-center space-x-2">
+              <i class="fa-solid fa-dharmachakra"></i>
+              <span>4. Heterochromatin vs. Euchromatin & Metaphase Chromosomes</span>
+            </h3>
+            <p>
+              Chromatin condensation dynamically regulates gene expression and cell division states.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-2">
+              <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                <h4 class="font-bold text-slate-200 mb-1 text-xs">Euchromatin vs. Heterochromatin</h4>
+                <ul class="list-disc list-inside space-y-1 text-[11px] text-slate-400">
+                  <li><strong class="text-teal-300">Euchromatin:</strong> Less condensed, transcriptionally active, acetylated histones.</li>
+                  <li><strong class="text-rose-400">Heterochromatin:</strong> Highly condensed, transcriptionally silent, methylated histones.</li>
+                </ul>
+              </div>
+              <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                <h4 class="font-bold text-slate-200 mb-1 text-xs">Metaphase Chromosome (1400 nm)</h4>
+                <p class="text-[11px] text-slate-400">
+                  Maximum condensation achieved during mitosis (~10,000-fold compaction) to ensure error-free segregation of sister chromatids.
+                </p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Instructional Controls Footer -->
+        <div class="flex items-center justify-between text-xs text-slate-400 border-t border-slate-800 pt-4">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-lightbulb text-amber-400"></i>
+            <span>Tip: Switch to 3D Explorer anytime to inspect matching models!</span>
+          </div>
+          <button onclick="switchTab('quiz')" class="px-4 py-2 rounded-lg bg-bio-500 hover:bg-bio-400 text-slate-950 font-bold transition-all flex items-center space-x-1.5">
+            <span>Test Knowledge in Quiz</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- APPLICATION LOGIC & THREE.JS ENGINE -->
+  <script>
+    /* =========================================================================
+       GLOBAL APP STATE & CONFIGURATION
+       ========================================================================= */
+    const state = {
+      currentLevel: 1, // 1: Helix, 2: Nucleosome, 3: 30nm Fiber, 4: Chromosome
+      autoRotate: true,
+      score: 0,
+      streak: 0,
+      maxStreak: 0,
+      quizIndex: 0,
+      correctAnswersCount: 0,
+      currentSlide: 1,
+      totalSlides: 4
+    };
+
+    // 3D Scene Variables
+    let scene, camera, renderer, controls;
+    let levelGroups = { 1: null, 2: null, 3: null, 4: null };
+    let raycaster, mouse;
+    let animatedParticles = [];
+
+    /* =========================================================================
+       THREE.JS PROCEDURAL 3D MODEL GENERATION
+       ========================================================================= */
+    function init3D() {
+      const container = document.getElementById('canvas-container');
+      
+      // Scene Setup
+      scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x0f172a, 0.015);
+
+      // Camera Setup
+      camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 5, 25);
+
+      // Renderer Setup
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      // Controls Setup
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.maxDistance = 80;
+      controls.minDistance = 3;
+
+      // Lights
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
+
+      const dirLight1 = new THREE.DirectionalLight(0x00f2fe, 1.2);
+      dirLight1.position.set(20, 40, 20);
+      scene.add(dirLight1);
+
+      const dirLight2 = new THREE.DirectionalLight(0xa855f7, 0.8);
+      dirLight2.position.set(-20, -20, -10);
+      scene.add(dirLight2);
+
+      const pointLight = new THREE.PointLight(0x2dd4bf, 1, 30);
+      pointLight.position.set(0, 0, 0);
+      scene.add(pointLight);
+
+      // Raycaster setup
+      raycaster = new THREE.Raycaster();
+      mouse = new THREE.Vector2();
+
+      // Build 4 Hierarchy Levels
+      buildLevel1_DNA();
+      buildLevel2_Nucleosomes();
+      buildLevel3_30nmFiber();
+      buildLevel4_Chromosome();
+
+      // Initial visibility setup
+      updateLevelVisibility();
+
+      // Event Listeners
+      window.addEventListener('resize', onWindowResize);
+      renderer.domElement.addEventListener('click', onCanvasClick);
+
+      // Start Animation Loop
+      animate();
+    }
+
+    /* --- LEVEL 1: DNA DOUBLE HELIX (2 nm) --- */
+    function buildLevel1_DNA() {
+      const group = new THREE.Group();
+      group.name = "Level1_DNA";
+
+      const turns = 4;
+      const bpPerTurn = 10;
+      const totalBP = turns * bpPerTurn;
+      const heightStep = 0.7;
+      const radius = 3.2;
+
+      // Colors
+      const colorA = 0xef4444; // Adenine (Red)
+      const colorT = 0x3b82f6; // Thymine (Blue)
+      const colorC = 0xeab308; // Cytosine (Yellow)
+      const colorG = 0x10b981; // Guanine (Green)
+      const colorBackbone = 0xa855f7; // Phosphate (Purple)
+
+      const strand1Points = [];
+      const strand2Points = [];
+
+      const basePairs = [
+        { p1: colorA, p2: colorT, name: "Adenine-Thymine Pair (2 H-Bonds)" },
+        { p1: colorG, p2: colorC, name: "Guanine-Cytosine Pair (3 H-Bonds)" }
+      ];
+
+      for (let i = 0; i < totalBP; i++) {
+        const angle = (i / bpPerTurn) * Math.PI * 2;
+        const y = (i - totalBP / 2) * heightStep;
+
+        const x1 = Math.cos(angle) * radius;
+        const z1 = Math.sin(angle) * radius;
+        const x2 = Math.cos(angle + Math.PI) * radius;
+        const z2 = Math.sin(angle + Math.PI) * radius;
+
+        strand1Points.push(new THREE.Vector3(x1, y, z1));
+        strand2Points.push(new THREE.Vector3(x2, y, z2));
+
+        // Sugar-Phosphate Sphere Nodes
+        const sphereGeo = new THREE.SphereGeometry(0.35, 16, 16);
+        const backboneMat = new THREE.MeshStandardMaterial({ color: colorBackbone, roughness: 0.3, metalness: 0.2 });
+        
+        const node1 = new THREE.Mesh(sphereGeo, backboneMat);
+        node1.position.set(x1, y, z1);
+        node1.userData = { title: "Sugar-Phosphate Backbone (5'->3')", desc: "Alternating deoxyribose sugar and phosphate groups linked by phosphodiester bonds.", metric1: "2.0 nm", metric2: "5' to 3' Strand" };
+        group.add(node1);
+
+        const node2 = new THREE.Mesh(sphereGeo, backboneMat);
+        node2.position.set(x2, y, z2);
+        node2.userData = { title: "Antiparallel Backbone (3'->5')", desc: "Complementary strand running in opposite chemical directionality.", metric1: "2.0 nm", metric2: "3' to 5' Strand" };
+        group.add(node2);
+
+        // Nitrogenous Base Rungs
+        const bpType = basePairs[i % basePairs.length];
+        
+        // Base 1 Half
+        const midX = (x1 + x2) / 2;
+        const midZ = (z1 + z2) / 2;
+        
+        const base1Geo = new THREE.CylinderGeometry(0.18, 0.18, radius, 8);
+        const base1Mat = new THREE.MeshStandardMaterial({ color: bpType.p1, roughness: 0.4 });
+        const base1Mesh = new THREE.Mesh(base1Geo, base1Mat);
+        
+        base1Mesh.position.set((x1 + midX) / 2, y, (z1 + midZ) / 2);
+        base1Mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(x2 - x1, 0, z2 - z1).normalize());
+        base1Mesh.userData = { title: "Purine / Pyrimidine Base", desc: bpType.name, metric1: "Hydrogen Bonded", metric2: "Complementary" };
+        group.add(base1Mesh);
+
+        // Base 2 Half
+        const base2Mat = new THREE.MeshStandardMaterial({ color: bpType.p2, roughness: 0.4 });
+        const base2Mesh = new THREE.Mesh(base1Geo, base2Mat);
+        base2Mesh.position.set((x2 + midX) / 2, y, (z2 + midZ) / 2);
+        base2Mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(x1 - x2, 0, z1 - z2).normalize());
+        base2Mesh.userData = { title: "Complementary Nitrogenous Base", desc: bpType.name, metric1: "Hydrogen Bonded", metric2: "Complementary" };
+        group.add(base2Mesh);
+
+        // Hydrogen Bond Center Connector Ring
+        const hBondGeo = new THREE.RingGeometry(0.1, 0.25, 8);
+        const hBondMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, opacity: 0.8, transparent: true });
+        const hBondMesh = new THREE.Mesh(hBondGeo, hBondMat);
+        hBondMesh.position.set(midX, y, midZ);
+        group.add(hBondMesh);
+      }
+
+      // Continuous Helical Backbone Tubes
+      const curve1 = new THREE.CatmullRomCurve3(strand1Points);
+      const curve2 = new THREE.CatmullRomCurve3(strand2Points);
+
+      const tubeGeo1 = new THREE.TubeGeometry(curve1, 120, 0.15, 8, false);
+      const tubeGeo2 = new THREE.TubeGeometry(curve2, 120, 0.15, 8, false);
+      const tubeMat = new THREE.MeshStandardMaterial({ color: colorBackbone, roughness: 0.3 });
+
+      group.add(new THREE.Mesh(tubeGeo1, tubeMat));
+      group.add(new THREE.Mesh(tubeGeo2, tubeMat));
+
+      levelGroups[1] = group;
+      scene.add(group);
+    }
+
+    /* --- LEVEL 2: NUCLEOSOMES (11 nm Beads-on-a-String) --- */
+    function buildLevel2_Nucleosomes() {
+      const group = new THREE.Group();
+      group.name = "Level2_Nucleosomes";
+
+      const beadCount = 5;
+      const spacing = 8.0;
+
+      for (let b = 0; b < beadCount; b++) {
+        const xPos = (b - (beadCount - 1) / 2) * spacing;
+        const yPos = Math.sin(b * 0.8) * 1.5;
+
+        const beadGroup = new THREE.Group();
+        beadGroup.position.set(xPos, yPos, 0);
+
+        // Core Histone Octamer Core (Center Cylinder/Sphere)
+        const coreGeo = new THREE.CylinderGeometry(2.2, 2.2, 1.8, 16);
+        const coreMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.3, metalness: 0.1 }); // Histone Orange
+        const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+        coreMesh.userData = { 
+          title: "Histone Octamer Core", 
+          desc: "Contains 2 copies each of core histones H2A, H2B, H3, and H4. Rich in basic Lysine/Arginine residues.",
+          metric1: "11 nm Bead", 
+          metric2: "8 Subunits" 
+        };
+        beadGroup.add(coreMesh);
+
+        // Individual Histone Subunit Markers
+        const subunitGeo = new THREE.SphereGeometry(0.7, 12, 12);
+        const colors = [0xef4444, 0x3b82f6, 0x10b981, 0xeab308];
+        const labels = ["H2A Subunit", "H2B Subunit", "H3 Subunit", "H4 Subunit"];
+        
+        for (let s = 0; s < 4; s++) {
+          const subMat = new THREE.MeshStandardMaterial({ color: colors[s] });
+          const subMesh = new THREE.Mesh(subunitGeo, subMat);
+          const angle = (s / 4) * Math.PI * 2;
+          subMesh.position.set(Math.cos(angle) * 1.4, 0.7, Math.sin(angle) * 1.4);
+          subMesh.userData = { title: labels[s], desc: "Core protein subunit facilitating ionic binding to DNA backbone.", metric1: "Histone Core", metric2: "Basic Protein" };
+          beadGroup.add(subMesh);
+        }
+
+        // Linker Histone H1
+        const h1Geo = new THREE.CapsuleGeometry ? new THREE.CapsuleGeometry(0.5, 1, 8, 8) : new THREE.CylinderGeometry(0.5, 0.5, 1.5, 8);
+        const h1Mat = new THREE.MeshStandardMaterial({ color: 0x06b6d4 });
+        const h1Mesh = new THREE.Mesh(h1Geo, h1Mat);
+        h1Mesh.position.set(2.4, 0, 0);
+        h1Mesh.userData = { title: "H1 Linker Histone", desc: "Binds to linker DNA entering and exiting the nucleosome bead, stabilizing higher-order packing.", metric1: "Linker Protein", metric2: "30nm Precursor" };
+        beadGroup.add(h1Mesh);
+
+        // Wrapped DNA Tube around Octamer
+        const dnaWrapPoints = [];
+        const wrapTurns = 1.65;
+        for (let t = -Math.PI * wrapTurns; t <= Math.PI * wrapTurns; t += 0.2) {
+          const r = 2.6;
+          const x = Math.cos(t) * r;
+          const z = Math.sin(t) * r;
+          const y = (t / (Math.PI * wrapTurns)) * 0.9;
+          dnaWrapPoints.push(new THREE.Vector3(x, y, z));
+        }
+        const wrapCurve = new THREE.CatmullRomCurve3(dnaWrapPoints);
+        const wrapGeo = new THREE.TubeGeometry(wrapCurve, 64, 0.25, 8, false);
+        const dnaMat = new THREE.MeshStandardMaterial({ color: 0xa855f7, roughness: 0.4 });
+        const wrapMesh = new THREE.Mesh(wrapGeo, dnaMat);
+        wrapMesh.userData = { title: "Wrapped DNA (~147 bp)", desc: "147 base pairs of double helix wrapping 1.65 left-handed superhelical turns around core.", metric1: "147 bp Length", metric2: "1.65 Turns" };
+        beadGroup.add(wrapMesh);
+
+        group.add(beadGroup);
+      }
+
+      // Connecting Linker DNA
+      const linkerPoints = [];
+      for (let b = 0; b < beadCount; b++) {
+        const xPos = (b - (beadCount - 1) / 2) * spacing;
+        const yPos = Math.sin(b * 0.8) * 1.5;
+        linkerPoints.push(new THREE.Vector3(xPos, yPos, 0));
+      }
+      const linkerCurve = new THREE.CatmullRomCurve3(linkerPoints);
+      const linkerGeo = new THREE.TubeGeometry(linkerCurve, 64, 0.18, 8, false);
+      const linkerMat = new THREE.MeshStandardMaterial({ color: 0xa855f7 });
+      group.add(new THREE.Mesh(linkerGeo, linkerMat));
+
+      levelGroups[2] = group;
+      scene.add(group);
+    }
+
+    /* --- LEVEL 3: 30 nm SOLENOID CHROMATIN FIBER --- */
+    function buildLevel3_30nmFiber() {
+      const group = new THREE.Group();
+      group.name = "Level3_30nmFiber";
+
+      const fiberTurns = 6;
+      const nucleosomesPerTurn = 6;
+      const totalNucleosomes = fiberTurns * nucleosomesPerTurn;
+      const helixRadius = 4.5;
+      const pitch = 3.0;
+
+      for (let i = 0; i < totalNucleosomes; i++) {
+        const angle = (i / nucleosomesPerTurn) * Math.PI * 2;
+        const y = (i - totalNucleosomes / 2) * (pitch / nucleosomesPerTurn);
+        const x = Math.cos(angle) * helixRadius;
+        const z = Math.sin(angle) * helixRadius;
+
+        // Compact Nucleosome Sphere
+        const nucGeo = new THREE.SphereGeometry(1.2, 16, 16);
+        const nucMat = new THREE.MeshStandardMaterial({ 
+          color: (i % 2 === 0) ? 0xf97316 : 0x06b6d4, 
+          roughness: 0.3 
+        });
+        const nucMesh = new THREE.Mesh(nucGeo, nucMat);
+        nucMesh.position.set(x, y, z);
+        nucMesh.userData = { 
+          title: "Solenoid Packed Nucleosome", 
+          desc: "Nucleosomes organized into a 6-nucleosome-per-turn helical solenoid fiber facilitated by Histone H1 tails.",
+          metric1: "30 nm Diameter", 
+          metric2: "40-fold Compaction" 
+        };
+        group.add(nucMesh);
+      }
+
+      // Central Fiber Axis Core
+      const coreTubeGeo = new THREE.CylinderGeometry(1.5, 1.5, fiberTurns * pitch, 16);
+      const coreTubeMat = new THREE.MeshStandardMaterial({ color: 0x334155, transparent: true, opacity: 0.4, wireframe: true });
+      const coreTube = new THREE.Mesh(coreTubeGeo, coreTubeMat);
+      coreTube.userData = { title: "Scaffold Helical Axis", desc: "Central axis around which the 30 nm fiber coiled structure condenses.", metric1: "30 nm Structural Fiber", metric2: "Solenoid Model" };
+      group.add(coreTube);
+
+      levelGroups[3] = group;
+      scene.add(group);
+    }
+
+    /* --- LEVEL 4: METAPHASE CHROMOSOME (1400 nm) --- */
+    function buildLevel4_Chromosome() {
+      const group = new THREE.Group();
+      group.name = "Level4_Chromosome";
+
+      // Sister Chromatids (Left and Right Arms)
+      const createChromatidArm = (xOffset, mirrorSign) => {
+        const armGroup = new THREE.Group();
+        armGroup.position.x = xOffset;
+
+        // Upper Arm (p arm)
+        const pArmGeo = new THREE.CylinderGeometry(1.2, 1.6, 6, 16);
+        const armMat = new THREE.MeshStandardMaterial({ color: 0x818cf8, roughness: 0.4 });
+        const pArm = new THREE.Mesh(pArmGeo, armMat);
+        pArm.position.set(0, 3.5, 0);
+        pArm.userData = { title: "Short Arm (p-arm)", desc: "Upper condensed chromatin arm containing linear DNA sequences.", metric1: "1400 nm Width", metric2: " Sister Chromatid" };
+        armGroup.add(pArm);
+
+        // Lower Arm (q arm)
+        const qArmGeo = new THREE.CylinderGeometry(1.6, 1.2, 9, 16);
+        const qArm = new THREE.Mesh(qArmGeo, armMat);
+        qArm.position.set(0, -5, 0);
+        qArm.userData = { title: "Long Arm (q-arm)", desc: "Lower highly condensed region of duplicated chromosome.", metric1: "1400 nm Width", metric2: "Sister Chromatid" };
+        armGroup.add(qArm);
+
+        // Telomeres (Caps)
+        const telomereGeo = new THREE.SphereGeometry(1.3, 16, 16);
+        const teloMat = new THREE.MeshStandardMaterial({ color: 0x2dd4bf, emissive: 0x14b8a6, emissiveIntensity: 0.4 });
+        
+        const topTelo = new THREE.Mesh(telomereGeo, teloMat);
+        topTelo.position.set(0, 6.5, 0);
+        topTelo.userData = { title: "Telomere Cap", desc: "Repetitive non-coding TTAGGG DNA sequences protecting chromosome ends from degradation.", metric1: "Repetitive Caps", metric2: "End Protection" };
+        armGroup.add(topTelo);
+
+        const botTelo = new THREE.Mesh(telomereGeo, teloMat);
+        botTelo.position.set(0, -9.5, 0);
+        botTelo.userData = { title: "Telomere Cap", desc: "Prevents end-to-end chromosome fusion during nuclear division.", metric1: "TTAGGG Repeats", metric2: "Telomerase Target" };
+        armGroup.add(botTelo);
+
+        return armGroup;
+      };
+
+      const leftChromatid = createChromatidArm(-1.8, 1);
+      const rightChromatid = createChromatidArm(1.8, -1);
+      group.add(leftChromatid);
+      group.add(rightChromatid);
+
+      // Centromere / Primary Constriction Region
+      const centroGeo = new THREE.SphereGeometry(1.8, 16, 16);
+      const centroMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xe11d48, emissiveIntensity: 0.5 });
+      const centromere = new THREE.Mesh(centroGeo, centroMat);
+      centromere.position.set(0, 0, 0);
+      centromere.scale.set(1.4, 0.8, 1);
+      centromere.userData = { 
+        title: "Centromere & Kinetochore", 
+        desc: "Constricted region joining sister chromatids. Kinetochore protein complexes assemble here for spindle fiber attachment during mitosis.",
+        metric1: "Primary Constriction", 
+        metric2: "Kinetochore Site" 
+      };
+      group.add(centromere);
+
+      levelGroups[4] = group;
+      scene.add(group);
+    }
+
+    /* --- LEVEL SWITCHING & SCENE ANIMATION --- */
+    function updateLevelVisibility() {
+      for (let lvl in levelGroups) {
+        if (levelGroups[lvl]) {
+          levelGroups[lvl].visible = (parseInt(lvl) === state.currentLevel);
+        }
+      }
+
+      // Update UI Buttons
+      for (let i = 1; i <= 4; i++) {
+        const btn = document.getElementById(`lvl-btn-${i}`);
+        if (i === state.currentLevel) {
+          btn.className = "level-btn w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between transition-all bg-bio-500/20 text-bio-300 border border-bio-500/40 shadow-sm";
+        } else {
+          btn.className = "level-btn w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between transition-all text-slate-300 hover:bg-slate-800/60 border border-transparent";
+        }
+      }
+
+      // Update Explorer Panel Texts
+      updateExplorerPanelText();
+    }
+
+    function setLevel(lvl) {
+      state.currentLevel = lvl;
+      updateLevelVisibility();
+
+      // Camera Transitions per Level
+      const targets = {
+        1: { pos: [0, 2, 22], target: [0, 0, 0] },
+        2: { pos: [0, 4, 26], target: [0, 0, 0] },
+        3: { pos: [0, 6, 28], target: [0, 0, 0] },
+        4: { pos: [0, 0, 24], target: [0, 0, 0] }
+      };
+      const t = targets[lvl];
+      if (t) {
+        animateCamera(t.pos, t.target);
+      }
+    }
+
+    function animateCamera(newPos, newTarget) {
+      const startPos = camera.position.clone();
+      const endPos = new THREE.Vector3(...newPos);
+      const startTarget = controls.target.clone();
+      const endTarget = new THREE.Vector3(...newTarget);
+
+      let startTime = performance.now();
+      const duration = 1000; // ms
+
+      function step(now) {
+        let elapsed = now - startTime;
+        let progress = Math.min(elapsed / duration, 1);
+        let ease = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+
+        camera.position.lerpVectors(startPos, endPos, ease);
+        controls.target.lerpVectors(startTarget, endTarget, ease);
+        controls.update();
+
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        }
+      }
+      requestAnimationFrame(step);
+    }
+
+    function toggleAutoRotate() {
+      state.autoRotate = !state.autoRotate;
+      const btnText = document.getElementById('rotate-text');
+      btnText.innerText = state.autoRotate ? 'Pause Spin' : 'Auto Spin';
+    }
+
+    function resetCamera() {
+      setLevel(state.currentLevel);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Rotate Active Group
+      const currentGroup = levelGroups[state.currentLevel];
+      if (currentGroup && state.autoRotate) {
+        currentGroup.rotation.y += 0.005;
+      }
+
+      // Animate Quiz Reward Particles
+      for (let i = animatedParticles.length - 1; i >= 0; i--) {
+        const p = animatedParticles[i];
+        p.position.add(p.userData.velocity);
+        p.material.opacity -= 0.015;
+        if (p.material.opacity <= 0) {
+          scene.remove(p);
+          animatedParticles.splice(i, 1);
+        }
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    /* --- RAYCASTING INSPECTOR --- */
+    function onCanvasClick(event) {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const activeGroup = levelGroups[state.currentLevel];
+      if (!activeGroup) return;
+
+      const intersects = raycaster.intersectObjects(activeGroup.children, true);
+
+      if (intersects.length > 0) {
+        let obj = intersects[0].object;
+        while (obj && !obj.userData.title && obj.parent !== activeGroup) {
+          obj = obj.parent;
+        }
+
+        if (obj && obj.userData && obj.userData.title) {
+          showInspector(obj.userData);
+          // Visual Flash pulse
+          if (obj.material && obj.material.color) {
+            const origHex = obj.material.color.getHex();
+            obj.material.color.setHex(0x00f2fe);
+            setTimeout(() => obj.material.color.setHex(origHex), 400);
+          }
+        }
+      }
+    }
+
+    function showInspector(data) {
+      const card = document.getElementById('inspector-card');
+      document.getElementById('inspect-title').innerText = data.title || "Structure";
+      document.getElementById('inspect-desc').innerText = data.desc || "";
+      document.getElementById('inspect-metric1').innerText = data.metric1 || "N/A";
+      document.getElementById('inspect-metric2').innerText = data.metric2 || "N/A";
+      card.classList.remove('hidden');
+    }
+
+    function closeInspector() {
+      document.getElementById('inspector-card').classList.add('hidden');
+    }
+
+    /* =========================================================================
+       EXPLORER PANEL CONTENT LOGIC
+       ========================================================================= */
+    const explorerData = {
+      1: {
+        scale: "2 nm",
+        title: "Double Helix DNA",
+        desc: "The primary level of genetic architecture consisting of complementary polynucleotide chains twisted into a right-handed helix.",
+        features: [
+          "Antiparallel strands: 5′-to-3′ directionality opposite to 3′-to-5′.",
+          "Purines (A, G) pair with Pyrimidines (T, C).",
+          "A-T joined by 2 Hydrogen bonds; G-C joined by 3 Hydrogen bonds.",
+          "Major and minor grooves accommodate DNA-binding proteins."
+        ]
+      },
+      2: {
+        scale: "11 nm",
+        title: "Nucleosome Octamers",
+        desc: "The primary packing unit ('beads-on-a-string'). DNA double helix winds around basic histone proteins to prevent tangling.",
+        features: [
+          "Core Octamer: 2 copies each of H2A, H2B, H3, and H4.",
+          "~147 base pairs wrapped 1.65 turns per bead.",
+          "Histones are rich in positively charged Lysine & Arginine.",
+          "H1 Linker histone seals DNA entry/exit points."
+        ]
+      },
+      3: {
+        scale: "30 nm",
+        title: "Chromatin Solenoid Fiber",
+        desc: "Compacted helical coiling of nucleosome beads forming a 30-nm thick chromatin strand present in interphase heterochromatin.",
+        features: [
+          "Solenoid Model: 6 nucleosomes per helical turn.",
+          "Stabilized by Histone H1 N/C-terminal tail interactions.",
+          "Achieves a ~40-fold total linear compaction ratio.",
+          "Organized into looped domains anchored to scaffold proteins."
+        ]
+      },
+      4: {
+        scale: "1400 nm",
+        title: "Metaphase Chromosome",
+        desc: "The ultimate condensed state reached during cell division (mitosis/meiosis) to allow orderly segregation of genetic material.",
+        features: [
+          "Composed of two identical Sister Chromatids.",
+          "Centromere holds chromatids together & attaches to Kinetochore.",
+          "Telomeres cap chromosome ends to prevent degradation.",
+          "~10,000-fold total compaction of naked genomic DNA."
+        ]
+      }
+    };
+
+    function updateExplorerPanelText() {
+      const info = explorerData[state.currentLevel];
+      if (!info) return;
+
+      document.getElementById('explorer-scale-badge').innerText = info.scale;
+      document.getElementById('explorer-title').innerText = info.title;
+      document.getElementById('explorer-desc').innerText = info.desc;
+
+      const container = document.getElementById('explorer-features');
+      container.innerHTML = info.features.map(f => `
+        <div class="flex items-start space-x-2 text-slate-300">
+          <i class="fa-solid fa-angle-right text-bio-400 mt-0.5"></i>
+          <span>${f}</span>
+        </div>
+      `).join('');
+    }
+
+    /* =========================================================================
+       QUIZ ENGINE LOGIC (Quizizz-Style High Yield Questions)
+       ========================================================================= */
+    const quizQuestions = [
+      {
+        topic: "DNA Structure",
+        level: 1,
+        question: "Which nitrogenous base pairing is held together by THREE hydrogen bonds and requires higher thermal energy to denature?",
+        options: [
+          "Adenine and Thymine",
+          "Guanine and Cytosine",
+          "Adenine and Uracil",
+          "Cytosine and Thymine"
+        ],
+        correct: 1,
+        explanation: "Guanine (purine) and Cytosine (pyrimidine) form three hydrogen bonds (G≡C), making GC-rich DNA regions thermally more stable than AT-rich regions (which have only two hydrogen bonds)."
+      },
+      {
+        topic: "DNA Directionality",
+        level: 1,
+        question: "Why are the two strands of a DNA double helix referred to as 'antiparallel'?",
+        options: [
+          "One strand is made of RNA while the other is DNA",
+          "They rotate in opposite clockwise directions",
+          "One strand runs 5′ to 3′ while the complementary strand runs 3′ to 5′",
+          "Purines only bind to other purines across the axis"
+        ],
+        correct: 2,
+        explanation: "Antiparallel orientation means the 5′ carbon end (with terminal phosphate) of one strand aligns with the 3′ carbon end (with terminal hydroxyl group) of its partner."
+      },
+      {
+        topic: "Histone Biochemistry",
+        level: 2,
+        question: "Why do core histone proteins bind with extremely high affinity to the DNA double helix?",
+        options: [
+          "Histones are negatively charged and repel nuclear water molecules",
+          "Histones contain abundant positively charged Lysine & Arginine residues that bind to negative phosphates",
+          "Histones form covalent disulfide bridges with deoxyribose sugar rings",
+          "Histones are hydrophobic lipids that encapsulate DNA"
+        ],
+        correct: 1,
+        explanation: "The sugar-phosphate backbone of DNA carries a strong negative charge. Core histones are enriched with basic amino acids (Lysine and Arginine), creating strong electrostatic attraction."
+      },
+      {
+        topic: "Nucleosome Architecture",
+        level: 2,
+        question: "Which histone protein is NOT part of the core octamer bead, but functions as the 'linker histone'?",
+        options: [
+          "Histone H2A",
+          "Histone H2B",
+          "Histone H3",
+          "Histone H1"
+        ],
+        correct: 3,
+        explanation: "The core octamer consists of two copies each of H2A, H2B, H3, and H4. Histone H1 acts as the linker histone, locking wrapped DNA in place."
+      },
+      {
+        topic: "Genome Packing Ratio",
+        level: 2,
+        question: "Approximately how many base pairs of DNA wrap around a single histone octamer core?",
+        options: [
+          "~50 bp",
+          "~147 bp",
+          "~300 bp",
+          "~1000 bp"
+        ],
+        correct: 1,
+        explanation: "Approximately 147 base pairs of double-stranded DNA wrap 1.65 left-handed superhelical turns around each histone octamer."
+      },
+      {
+        topic: "30nm Chromatin Fiber",
+        level: 3,
+        question: "What structural level is produced when 11-nm nucleosome beads fold into a compact helical coil with 6 nucleosomes per turn?",
+        options: [
+          "Solenoid 30-nm Chromatin Fiber",
+          "Okazaki Fragment",
+          "Metaphase Chromatid",
+          "Double Helix"
+        ],
+        correct: 0,
+        explanation: "The 30-nm solenoid fiber represents higher-order chromatin packing where nucleosomes spiral into a helical fiber (6 nucleosomes/turn), driven by Histone H1."
+      },
+      {
+        topic: "Epigenetics & Gene Expression",
+        level: 3,
+        question: "Which chromatin state is transcriptionally ACTIVE, loosely packed, and accessible to RNA Polymerase?",
+        options: [
+          "Heterochromatin",
+          "Euchromatin",
+          "Centromeric Heterochromatin",
+          "Metaphase Chromosome"
+        ],
+        correct: 1,
+        explanation: "Euchromatin is lightly packed and relaxed, allowing transcription factors and RNA polymerase access to genes. Heterochromatin is hyper-condensed and silent."
+      },
+      {
+        topic: "Chromosome Mechanics",
+        level: 4,
+        question: "What is the primary function of the centromere during cell division?",
+        options: [
+          "Synthesizing ribozymes",
+          "Providing the site for kinetochore assembly and sister chromatid cohesion",
+          "Replicating telomere caps",
+          "Unwinding double helix DNA"
+        ],
+        correct: 1,
+        explanation: "The centromere is the constricted region joining sister chromatids. It serves as the platform for kinetochore complex assembly where mitotic spindle fibers attach."
+      },
+      {
+        topic: "Chromosome Terminal Protection",
+        level: 4,
+        question: "Telomeres consist of repetitive non-coding sequences (e.g., 5′-TTAGGG-3′). What vital protection do they offer?",
+        options: [
+          "They encode essential metabolic enzymes",
+          "They prevent end-to-end fusion and degradation of linear chromosomal ends",
+          "They attach histones to the cell membrane",
+          "They trigger RNA splicing"
+        ],
+        correct: 1,
+        explanation: "Telomeres protect vital coding DNA from being lost during lagging-strand end-replication problems and prevent cellular DNA repair machinery from mistaking ends for double-strand breaks."
+      },
+      {
+        topic: "Compaction Magnitude",
+        level: 4,
+        question: "What is the overall compaction ratio of genomic DNA packaged into a fully condensed metaphase chromosome?",
+        options: [
+          "~10-fold",
+          "~100-fold",
+          "~10,000-fold",
+          "~1,000,000-fold"
+        ],
+        correct: 2,
+        explanation: "Linear double-helix DNA (~2 meters total length in humans) achieves roughly a 10,000-fold overall compaction ratio when fully condensed into metaphase chromosomes."
+      }
+    ];
+
+    function renderQuestion() {
+      const q = quizQuestions[state.quizIndex];
+      if (!q) return;
+
+      // Automatically shift 3D model camera to matching hierarchy level!
+      if (q.level) {
+        setLevel(q.level);
+      }
+
+      document.getElementById('quiz-current-num').innerText = state.quizIndex + 1;
+      document.getElementById('quiz-total-num').innerText = quizQuestions.length;
+      document.getElementById('quiz-topic-tag').innerText = q.topic;
+      document.getElementById('quiz-question-text').innerText = q.question;
+      
+      // Update Progress Bar
+      const progressPercent = ((state.quizIndex) / quizQuestions.length) * 100;
+      document.getElementById('quiz-progress-bar').style.width = `${progressPercent}%`;
+
+      // Hide explanation & next button
+      document.getElementById('quiz-explanation-box').classList.add('hidden');
+      document.getElementById('quiz-next-btn').classList.add('hidden');
+
+      // Options
+      const optionsContainer = document.getElementById('quiz-options-container');
+      optionsContainer.innerHTML = '';
+
+      q.options.forEach((optText, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'quiz-opt-btn p-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 text-left text-xs text-slate-200 transition-all flex items-start space-x-3';
+        btn.onclick = () => selectOption(index);
+        
+        const letter = String.fromCharCode(65 + index);
+        btn.innerHTML = `
+          <span class="w-5 h-5 rounded-md bg-slate-800 text-bio-400 font-mono font-bold flex items-center justify-center text-[11px] shrink-0 border border-slate-700">${letter}</span>
+          <span class="leading-relaxed">${optText}</span>
+        `;
+        optionsContainer.appendChild(btn);
+      });
+    }
+
+    function selectOption(selectedIndex) {
+      const q = quizQuestions[state.quizIndex];
+      const buttons = document.querySelectorAll('.quiz-opt-btn');
+      
+      // Disable further clicks
+      buttons.forEach(btn => btn.disabled = true);
+
+      const isCorrect = (selectedIndex === q.correct);
+
+      if (isCorrect) {
+        state.streak++;
+        if (state.streak > state.maxStreak) state.maxStreak = state.streak;
+        const streakBonus = state.streak * 50;
+        const earned = 100 + streakBonus;
+        state.score += earned;
+        state.correctAnswersCount++;
+
+        // Visual FX on option button
+        buttons[selectedIndex].className = 'quiz-opt-btn p-3.5 rounded-xl bg-emerald-500/20 border-2 border-emerald-500 text-left text-xs text-emerald-200 flex items-start space-x-3';
+        
+        // Show celebration particles in 3D scene!
+        trigger3DParticleBurst();
+        if (window.confetti) {
+          confetti({ particleCount: 40, spread: 60, origin: { y: 0.8 } });
+        }
+      } else {
+        state.streak = 0;
+        buttons[selectedIndex].className = 'quiz-opt-btn p-3.5 rounded-xl bg-rose-500/20 border-2 border-rose-500 text-left text-xs text-rose-200 flex items-start space-x-3';
+        // Highlight correct answer
+        buttons[q.correct].className = 'quiz-opt-btn p-3.5 rounded-xl bg-emerald-500/20 border-2 border-emerald-500/60 text-left text-xs text-emerald-200 flex items-start space-x-3';
+      }
+
+      // Update Header Stats
+      document.getElementById('streak-counter').innerText = `${state.streak}x`;
+      document.getElementById('score-display').innerText = state.score;
+      document.getElementById('quiz-streak').innerText = `${state.streak}x`;
+      document.getElementById('quiz-score').innerText = `${state.score} pts`;
+
+      // Show Explanation Box
+      const expBox = document.getElementById('quiz-explanation-box');
+      const expHeader = document.getElementById('quiz-result-header');
+      const expText = document.getElementById('quiz-explanation-text');
+
+      if (isCorrect) {
+        expHeader.className = "flex items-center space-x-2 font-bold mb-1 text-emerald-400";
+        expHeader.innerHTML = `<i class="fa-solid fa-circle-check"></i><span>Correct! (+${100 + state.streak * 50} pts)</span>`;
+      } else {
+        expHeader.className = "flex items-center space-x-2 font-bold mb-1 text-rose-400";
+        expHeader.innerHTML = `<i class="fa-solid fa-circle-xmark"></i><span>Incorrect</span>`;
+      }
+
+      expText.innerText = q.explanation;
+      expBox.classList.remove('hidden');
+
+      // Show Next Button
+      document.getElementById('quiz-next-btn').classList.remove('hidden');
+    }
+
+    function nextQuestion() {
+      state.quizIndex++;
+      if (state.quizIndex < quizQuestions.length) {
+        renderQuestion();
+      } else {
+        showQuizResults();
+      }
+    }
+
+    function showQuizResults() {
+      document.getElementById('quiz-options-container').classList.add('hidden');
+      document.getElementById('quiz-explanation-box').classList.add('hidden');
+      document.getElementById('quiz-next-btn').classList.add('hidden');
+      document.getElementById('quiz-question-text').classList.add('hidden');
+      
+      const completeScreen = document.getElementById('quiz-complete-screen');
+      completeScreen.classList.remove('hidden');
+
+      document.getElementById('final-score').innerText = state.score;
+      const accuracy = Math.round((state.correctAnswersCount / quizQuestions.length) * 100);
+      document.getElementById('final-accuracy').innerText = `${accuracy}%`;
+      document.getElementById('final-streak').innerText = `${state.maxStreak}x`;
+
+      if (window.confetti) {
+        confetti({ particleCount: 100, spread: 100, origin: { y: 0.5 } });
+      }
+    }
+
+    function restartQuiz() {
+      state.quizIndex = 0;
+      state.score = 0;
+      state.streak = 0;
+      state.maxStreak = 0;
+      state.correctAnswersCount = 0;
+
+      document.getElementById('streak-counter').innerText = '0x';
+      document.getElementById('score-display').innerText = '0';
+      document.getElementById('quiz-streak').innerText = '0x';
+      document.getElementById('quiz-score').innerText = '0 pts';
+
+      document.getElementById('quiz-options-container').classList.remove('hidden');
+      document.getElementById('quiz-question-text').classList.remove('hidden');
+      document.getElementById('quiz-complete-screen').classList.add('hidden');
+
+      renderQuestion();
+    }
+
+    function trigger3DParticleBurst() {
+      const particleGeo = new THREE.SphereGeometry(0.15, 8, 8);
+      const colors = [0x2dd4bf, 0x00f2fe, 0xa855f7, 0xfacc15];
+
+      for (let i = 0; i < 30; i++) {
+        const mat = new THREE.MeshBasicMaterial({ 
+          color: colors[Math.floor(Math.random() * colors.length)], 
+          transparent: true, 
+          opacity: 1 
+        });
+        const p = new THREE.Mesh(particleGeo, mat);
+        p.position.set(0, 0, 0);
+        
+        p.userData = {
+          velocity: new THREE.Vector3(
+            (Math.random() - 0.5) * 0.4,
+            (Math.random() - 0.5) * 0.4,
+            (Math.random() - 0.5) * 0.4
+          )
+        };
+
+        scene.add(p);
+        animatedParticles.push(p);
+      }
+    }
+
+    /* =========================================================================
+       PRESENTATION SLIDE NAVIGATION
+       ========================================================================= */
+    function updateSlideView() {
+      for (let i = 1; i <= state.totalSlides; i++) {
+        const slide = document.getElementById(`slide-${i}`);
+        if (slide) {
+          if (i === state.currentSlide) {
+            slide.classList.remove('hidden');
+          } else {
+            slide.classList.add('hidden');
+          }
+        }
+      }
+      document.getElementById('slide-indicator').innerText = `Slide ${state.currentSlide} / ${state.totalSlides}`;
+      
+      // Auto adjust 3D view to match slide context
+      setLevel(state.currentSlide);
+    }
+
+    function nextSlide() {
+      if (state.currentSlide < state.totalSlides) {
+        state.currentSlide++;
+        updateSlideView();
+      }
+    }
+
+    function prevSlide() {
+      if (state.currentSlide > 1) {
+        state.currentSlide--;
+        updateSlideView();
+      }
+    }
+
+    /* =========================================================================
+       MAIN UI TAB NAVIGATION
+       ========================================================================= */
+    function switchTab(tabName) {
+      const panels = {
+        explorer: document.getElementById('panel-explorer'),
+        quiz: document.getElementById('panel-quiz'),
+        guide: document.getElementById('panel-guide')
+      };
+
+      const buttons = {
+        explorer: document.getElementById('nav-explorer'),
+        quiz: document.getElementById('nav-quiz'),
+        guide: document.getElementById('nav-guide')
+      };
+
+      for (let key in panels) {
+        if (key === tabName) {
+          panels[key].classList.remove('hidden');
+          buttons[key].className = 'tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 transition-all bg-bio-500 text-slate-950 shadow-md';
+        } else {
+          panels[key].classList.add('hidden');
+          buttons[key].className = 'tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 transition-all text-slate-400 hover:text-slate-200';
+        }
+      }
+
+      if (tabName === 'quiz' && state.quizIndex === 0) {
+        renderQuestion();
+      }
+    }
+
+    /* =========================================================================
+       INIT ON WINDOW LOAD
+       ========================================================================= */
+    window.onload = function() {
+      init3D();
+      updateExplorerPanelText();
+    };
+  </script>
+</body>
+</html>
